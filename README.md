@@ -76,5 +76,5 @@ aws cloudformation create-stack \
 ```
 ## Conclusion
 With this CloudFormation template we combined AWS CodeBuild, CodeCommit, Lambda and ECR to create a serverless CI/CD pipeline for Docker images. 
-The same template can be reused to create pipelines for other images. The same setup can also be used to build other artifacts based on a git
-repository or deploy stuff to AWS. It is not simple, but it completely serverless!
+The same template can be reused to create pipelines for other images. Variants of the template can be created to build other artifacts based on a git
+repository or deploy stuff to AWS. It is not simple, but it is completely serverless!

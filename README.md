@@ -9,8 +9,8 @@ for Docker images in minutes!
 It is simple, you just download the CloudFormation template:
 
 ```sh
-git clone https://github.com/binxio/blog-serverless-docker-image-ci-cd-with-aws.git
-cd blog-serverless-docker-image-ci-cd-with-aws
+git clone https://github.com/binxio/blog-serverless-ci-cd-of-docker-images-with-aws.git
+cd blog-serverless-ci-cd-of-docker-images-with-aws
 ```
 and deploy it:
 ```sh
@@ -23,11 +23,12 @@ aws --region eu-central-1 \
 aws cloudformation wait stack-create-complete --stack-name paas-monitor-ci-cd
 ```
 This creates:
+
 - a git repository named `paas-monitor`
 - a Docker image repository named `mvanholsteijn/paas-monitor`
 - a build project named `paas-monitor`
 - an IAM policy controlling access of the build project
-- a lambda which is starts builds on repository commits 
+- a lambda which starts builds on repository commits 
 
 ### cloning a source repository
 To see this in action, you need something to build, like our [paas-monitor](https://github.com/mvanholsteijn/paas-monitor.git).
@@ -46,7 +47,7 @@ pip install git-remote-codecommit
 This remote helper is invoked when you use `codecommit` as a protocol in the git
 repository url, in the following format: `codecommit:<profile>/<name>`. Here, `profile` is the AWS profile which contains the credentials to use and `name` the name of the intended repository.
 
-### pushing to remote
+### pushing to CodeCommit
 Now, you can push the git repository to the CodeCommit repository:
 ```sh
 git remote add aws codecommit:${AWS_PROFILE:-default}/paas-monitor

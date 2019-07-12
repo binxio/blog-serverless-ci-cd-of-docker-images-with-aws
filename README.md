@@ -27,7 +27,7 @@ This creates:
 - a Docker image repository named `mvanholsteijn/paas-monitor`
 - a build project named `paas-monitor`
 - an IAM policy controlling access of the build project
-- a lambda which is starts the project on repository commits 
+- a lambda which is starts builds on repository commits 
 
 ### cloning a source repository
 To see this in action, you need something to build, like our [paas-monitor](https://github.com/mvanholsteijn/paas-monitor.git).

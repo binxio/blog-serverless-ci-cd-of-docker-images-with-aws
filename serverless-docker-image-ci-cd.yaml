@@ -1,0 +1,192 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  RepositoryName:
+    Type: String
+    Default: 'paas-monitor'
+  RepositoryUser:
+    Type: String
+    Default: 'mvanholsteijn'
+
+Resources:
+  GitRepository:
+    Type: AWS::CodeCommit::Repository
+    Properties:
+      RepositoryName: !Ref 'RepositoryName'
+      Triggers:
+        - Name: BuildTrigger
+          DestinationArn: !GetAtt 'BuildTrigger.Arn'
+          Branches:
+            - master
+          Events:
+            - updateReference
+          CustomData: !Ref 'RepositoryName'
+
+  ImageRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub '${RepositoryUser}/${RepositoryName}'
+      RepositoryPolicyText:
+        Version: '2008-10-17'
+        Statement:
+          - Sid: allow image pull 
+            Effect: Allow
+            Principal:
+              AWS:
+                - !Sub 'arn:aws:iam::${AWS::AccountId}:root'
+            Action:
+              - ecr:GetDownloadUrlForLayer
+              - ecr:BatchGetImage
+              - ecr:BatchCheckLayerAvailability
+          - Sid: allow image push 
+            Effect: Allow
+            Principal:
+              AWS:
+                - !Sub 'arn:aws:iam::${AWS::AccountId}:root'
+            Action:
+              - ecr:GetDownloadUrlForLayer
+              - ecr:BatchGetImage
+              - ecr:BatchCheckLayerAvailability
+              - ecr:PutImage
+              - ecr:InitiateLayerUpload
+              - ecr:UploadLayerPart
+              - ecr:CompleteLayerUpload
+
+  Project:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Ref 'RepositoryName'
+      Description: !Sub 'builds ${RepositoryName} image'
+      ServiceRole: !Ref 'ProjectRole'
+      Artifacts:
+        Type: no_artifacts
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:2.0
+        PrivilegedMode: true
+        EnvironmentVariables:
+          - Name: REGISTRY_HOST
+            Value: !Sub '${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com'
+            Type: PLAINTEXT
+          - Name: AWS_DEFAULT_REGION
+            Value: !Ref AWS::Region
+            Type: PLAINTEXT
+
+      Source:
+        Type: CODECOMMIT
+        Location: !GetAtt 'GitRepository.CloneUrlHttp'
+        BuildSpec: .buildspec.yaml
+        GitCloneDepth: 0
+
+  BuildTrigger:
+    Type: AWS::Lambda::Function
+    Properties:
+      Description: trigger codebuild on commit
+      Handler: index.handler
+      Runtime: python3.6
+      Role: !GetAtt 'BuildTriggerRole.Arn'
+      Code:
+        ZipFile: |
+          import boto3
+
+          def handler(event, context):
+            print('Starting a new build ...')
+            cb = boto3.client('codebuild')
+            build = {
+              'projectName': event['Records'][0]['customData'],
+              'sourceVersion': event['Records'][0]['codecommit']['references'][0]['commit']
+            }
+            print('Starting build for project {0} from commit ID {1}'.format(build['projectName'], build['sourceVersion']))
+            cb.start_build(**build)
+
+  BuildTriggerPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref 'BuildTrigger'
+      Principal: codecommit.amazonaws.com
+      SourceArn: !GetAtt 'GitRepository.Arn'
+
+  BuildTriggerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+            Condition: {}
+      Path: /
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSCodeBuildDeveloperAccess
+
+  ProjectRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Action: sts:AssumeRole
+            Principal:
+              Service: codebuild.amazonaws.com
+            Condition: {}
+      Path: /
+      Policies:
+        - PolicyName: CodeBuild
+          PolicyDocument:
+            Statement:
+              - Sid: CloudWatchLogsPolicy
+                Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource:
+                  - '*'
+              - Sid: CodeCommitPolicy
+                Effect: Allow
+                Action:
+                  - codecommit:GitPull
+                Resource:
+                  - '*'
+              - Sid: S3GetObjectPolicy
+                Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                Resource:
+                  - '*'
+              - Sid: S3PutObjectPolicy
+                Effect: Allow
+                Action:
+                  - s3:PutObject
+                Resource:
+                  - '*'
+              - Sid: ECRPullPolicy
+                Effect: Allow
+                Action:
+                  - ecr:BatchCheckLayerAvailability
+                  - ecr:GetDownloadUrlForLayer
+                  - ecr:BatchGetImage
+                Resource:
+                  - '*'
+              - Sid: ECRAuthPolicy
+                Effect: Allow
+                Action:
+                  - ecr:GetAuthorizationToken
+                Resource:
+                  - '*'
+              - Sid: ECRPushPolicy
+                Effect: Allow
+                Action:
+                  - ecr:GetDownloadUrlForLayer
+                  - ecr:BatchGetImage
+                  - ecr:BatchCheckLayerAvailability
+                  - ecr:PutImage
+                  - ecr:InitiateLayerUpload
+                  - ecr:UploadLayerPart
+                  - ecr:CompleteLayerUpload
+                Resource:
+                  - !GetAtt 'ImageRepository.Arn'

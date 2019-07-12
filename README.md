@@ -29,9 +29,8 @@ This creates:
 - an IAM policy controlling access of the build project
 - a lambda which is starts the project on repository commits 
 
-### cloning the source repository
-To see this in action, you are going to push our [paas-monitor](https://github.com/mvanholsteijn/paas-monitor.git) repository
-to the newly created CodeCommit repository:
+### cloning a source repository
+To see this in action, you need something to build, like our [paas-monitor](https://github.com/mvanholsteijn/paas-monitor.git).
 ```sh
 git clone https://github.com/mvanholsteijn/paas-monitor.git
 cd paas-monitor
@@ -40,14 +39,12 @@ In this repository you will find a `.buildspec.yaml` which tells CodeBuild
 how to build this image.
 
 ### installing the git remote helper
-Next you install the [git remote helper for CodeCommit](https://github.com/awslabs/git-remote-codecommit) which allows you to push with our AWS credentials: No ssh keys needed!
+Before we can push this, you need to install the [git remote helper for CodeCommit](https://github.com/awslabs/git-remote-codecommit) which allows you to push with your AWS credentials: No ssh keys needed!
 ```sh
 pip install git-remote-codecommit
 ```
-This remote helper, allows you to use `codecommit` as a protocol in a git
-repository url. A full CodeCommit git url has the following format: `codecommit:<profile>/<name>`,
-where `profile` is the AWS profile which contains the credentials to use and `name` the name of 
-the intended repository.
+This remote helper is invoked when you use `codecommit` as a protocol in the git
+repository url, in the following format: `codecommit:<profile>/<name>`. Here, `profile` is the AWS profile which contains the credentials to use and `name` the name of the intended repository.
 
 ### pushing to remote
 Now, you can push the git repository to the CodeCommit repository:
@@ -58,7 +55,7 @@ git push aws
 ```
 In order to view the build process, go to the [CodeBuild console](https://eu-central-1.console.aws.amazon.com/codesuite/codebuild/projects/paas-monitor/history).
 
-### Reuse
+### re-use
 If you want to reuse this template for your own build pipelines, just specify your repository name and user when creating 
 the stack:
 

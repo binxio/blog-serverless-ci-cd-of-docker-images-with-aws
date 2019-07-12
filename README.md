@@ -1,7 +1,8 @@
 # serverless CI/CD pipelines for docker images with AWS
-When you look AWS services like CodeBuild, CodeCommit, CodePipeline and ECR you would think it is very easy to
-create a simple CI/CD build pipeline for a docker image. But it is not.  In this repository you will find a CloudFormation 
-template which creates a serverless CI/CD pipeline for Docker images. 
+When you look at AWS services like CodeBuild, CodeCommit, CodePipeline and ECR, you would think it is very easy to
+create a simple CI/CD build pipeline for a docker image. But it is not. In this repository you will find a CloudFormation 
+template which creates a serverless CI/CD pipeline for Docker images. The template allows you to create CI/CD pipelines
+for Docker images in minutes!
 
 <!--more-->
 ### How do I do it?
@@ -29,7 +30,7 @@ This creates:
 - a lambda which is starts the project on repository commits 
 
 ### cloning the source repository
-To see this in action, you are going build push our [paas-monitor](https://github.com/mvanholsteijn/paas-monitor.git) repository
+To see this in action, you are going to push our [paas-monitor](https://github.com/mvanholsteijn/paas-monitor.git) repository
 to the newly created CodeCommit repository:
 ```sh
 git clone https://github.com/mvanholsteijn/paas-monitor.git
@@ -43,19 +44,19 @@ Next you install the [git remote helper for CodeCommit](https://github.com/awsla
 ```sh
 pip install git-remote-codecommit
 ```
-This remote helper, allows you to use codecommit: as a protocol in a git
+This remote helper, allows you to use `codecommit` as a protocol in a git
 repository url. A full CodeCommit git url has the following format: `codecommit:<profile>/<name>`,
 where `profile` is the AWS profile which contains the credentials to use and `name` the name of 
 the intended repository.
 
 ### pushing to remote
-Now, we push the git repository to the CodeCommit repository
-```
+Now, you can push the git repository to the CodeCommit repository:
+```sh
 git remote add aws codecommit:${AWS_PROFILE:-default}/paas-monitor
 git push aws --tags
 git push aws
 ```
-In order to view the build process, go to the [CodeBuild console](https://eu-central-1.console.aws.amazon.com/codesuite/codebuild/projects/paas-monitor/history)
+In order to view the build process, go to the [CodeBuild console](https://eu-central-1.console.aws.amazon.com/codesuite/codebuild/projects/paas-monitor/history).
 
 ### Reuse
 If you want to reuse this template for your own build pipelines, just specify your repository name and user when creating 
